@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matplotlib Plot Type Explorer</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 15px; background: #f8f9fa; color: #333; overflow-x: hidden; }
+        .container { display: flex; flex-direction: column; gap: 20px; max-width: 900px; margin: 0 auto; }
+        
+        .controls { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        button { padding: 10px 15px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; cursor: pointer; font-weight: bold; color: #475569; transition: all 0.2s; font-size: 0.95em; }
+        button:hover { background: #e2e8f0; }
+        button.active { background: #3b82f6; color: white; border-color: #2563eb; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        
+        .display-area { display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
+        .chart-box { flex: 2; min-width: 300px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; }
+        .info-box { flex: 1; min-width: 250px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; }
+        
+        svg { width: 100%; height: 300px; max-width: 500px; display: block; overflow: visible; }
+        .axis { stroke: #333; stroke-width: 2; }
+        .grid { stroke: #e2e8f0; stroke-dasharray: 4; }
+        .label { fill: #64748b; font-size: 12px; font-family: sans-serif; }
+        
+        h3 { margin-top: 0; color: #1e293b; font-size: 1.3em; }
+        p { color: #475569; line-height: 1.5; font-size: 0.95em; }
+        
+        .code-box { background: #1e293b; color: #f8fafc; padding: 15px; border-radius: 6px; font-family: "Courier New", Courier, monospace; font-size: 0.9em; overflow-x: auto; margin-top: 15px; border-left: 4px solid #3b82f6; }
+        .code-method { color: #a5d6ff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls" id="btn-group">
+        <button class="active" data-type="line">Line Chart</button>
+        <button data-type="bar">Bar Chart</button>
+        <button data-type="scatter">Scatter Plot</button>
+        <button data-type="hist">Histogram</button>
+        <button data-type="box">Box Plot</button>
+        <button data-type="pie">Pie Chart</button>
+    </div>
+
+    <div class="display-area">
+        <div class="chart-box">
+            <svg id="plot-svg" viewBox="0 0 500 300"></svg>
+        </div>
+        <div class="info-box">
+            <h3 id="info-title">Line Chart</h3>
+            <p id="info-desc">Displays continuous data points connected by straight line segments. Ideal for showing trends over time or ordered sequences.</p>
+            <div class="code-box" id="info-code">
+                ax.<span class="code-method">plot</span>(x, y, marker='o')
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const svg = document.getElementById('plot-svg');
+    const title = document.getElementById('info-title');
+    const desc = document.getElementById('info-desc');
+    const code = document.getElementById('info-code');
+    const buttons = document.querySelectorAll('button');
+
+    // Chart Data Definitions
+    const charts = {
+        line: {
+            title: "Line Chart",
+            desc: "Displays continuous data points connected by straight line segments. Ideal for showing trends over time or ordered sequences.",
+            code: "ax.<span class='code-method'>plot</span>(x, y, marker='o', color='blue')",
+            render: () => {
+                const pts = [[50, 250], [150, 150], [250, 200], [350, 100], [450, 50]];
+                let html = drawAxes();
+                let path = `M ${pts[0][0]} ${pts[0][1]}`;
+                for(let i=1; i<pts.length; i++) path += ` L ${pts[i][0]} ${pts[i][1]}`;
+                html += `<path d="${path}" fill="none" stroke="#3b82f6" stroke-width="4" />`;
+                pts.forEach(p => html += `<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="#1d4ed8" />`);
+                return html;
+            }
+        },
+        bar: {
+            title: "Bar Chart",
+            desc: "Presents categorical data with rectangular bars with heights or lengths proportional to the values they represent.",
+            code: "ax.<span class='code-method'>bar</span>(categories, values, color='green')",
+            render: () => {
+                const bars = [ [70, 150], [170, 220], [270, 100], [370, 180] ];
+                let html = drawAxes();
+                bars.forEach((b, i) => {
+                    html += `<rect x="${b[0]}" y="${280 - b[1]}" width="60" height="${b[1]}" fill="#22c55e" rx="2" />`;
+                    html += `<text x="${b[0] + 30}" y="295" text-anchor="middle" class="label">Cat ${i+1}</text>`;
+                });
+                return html;
+            }
+        },
+        scatter: {
+            title: "Scatter Plot",
+            desc: "Uses Cartesian coordinates to display values for typically two variables for a set of data, revealing correlations or clusters.",
+            code: "ax.<span class='code-method'>scatter</span>(x_data, y_data, alpha=0.7)",
+            render: () => {
+                let html = drawAxes();
+                // Generate pseudo-random cluster
+                for(let i=0; i<40; i++) {
+                    const cx = 100 + Math.random() * 350;
+                    const cy = 250 - (cx * 0.5) + (Math.random() * 80 - 40);
+                    html += `<circle cx="${cx}" cy="${cy}" r="5" fill="#a855f7" opacity="0.7" />`;
+                }
+                return html;
+            }
+        },
+        hist: {
+            title: "Histogram",
+            desc: "An approximate representation of the distribution of numerical data. The data is divided into continuous 'bins'.",
+            code: "ax.<span class='code-method'>hist</span>(data_array, bins=10, edgecolor='black')",
+            render: () => {
+                const bins = [20, 50, 90, 140, 200, 150, 80, 40, 15];
+                let html = drawAxes();
+                bins.forEach((h, i) => {
+                    html += `<rect x="${40 + (i*46)}" y="${280 - h}" width="46" height="${h}" fill="#f97316" stroke="white" stroke-width="2" />`;
+                });
+                return html;
+            }
+        },
+        box: {
+            title: "Box Plot",
+            desc: "A standardized way of displaying the distribution of data based on a five-number summary: minimum, first quartile, median, third quartile, and maximum.",
+            code: "ax.<span class='code-method'>boxplot</span>(data_array)",
+            render: () => {
+                let html = drawAxes();
+                const drawBox = (x, min, q1, med, q3, max) => {
+                    let b = `<line x1="${x}" y1="${280-min}" x2="${x}" y2="${280-max}" stroke="#334155" stroke-width="2" stroke-dasharray="4"/>`;
+                    b += `<rect x="${x-30}" y="${280-q3}" width="60" height="${q3-q1}" fill="#94a3b8" stroke="#334155" stroke-width="2" />`;
+                    b += `<line x1="${x-30}" y1="${280-med}" x2="${x+30}" y2="${280-med}" stroke="#ef4444" stroke-width="3" />`;
+                    b += `<line x1="${x-15}" y1="${280-min}" x2="${x+15}" y2="${280-min}" stroke="#334155" stroke-width="2" />`;
+                    b += `<line x1="${x-15}" y1="${280-max}" x2="${x+15}" y2="${280-max}" stroke="#334155" stroke-width="2" />`;
+                    return b;
+                };
+                html += drawBox(150, 20, 80, 120, 180, 230);
+                html += drawBox(350, 40, 110, 150, 200, 250);
+                html += `<text x="150" y="295" text-anchor="middle" class="label">Group A</text>`;
+                html += `<text x="350" y="295" text-anchor="middle" class="label">Group B</text>`;
+                return html;
+            }
+        },
+        pie: {
+            title: "Pie Chart",
+            desc: "A circular statistical graphic divided into slices to illustrate numerical proportion. Best used for a small number of categories.",
+            code: "ax.<span class='code-method'>pie</span>(sizes, labels=labels, autopct='%1.1f%%')",
+            render: () => {
+                // Simplified static pie rendering using SVG paths
+                return `
+                    <path d="M 250 150 L 250 20 A 130 130 0 0 1 371 103 Z" fill="#3b82f6" stroke="white" stroke-width="2"/>
+                    <path d="M 250 150 L 371 103 A 130 130 0 0 1 205 272 Z" fill="#22c55e" stroke="white" stroke-width="2"/>
+                    <path d="M 250 150 L 205 272 A 130 130 0 0 1 125 113 Z" fill="#f97316" stroke="white" stroke-width="2"/>
+                    <path d="M 250 150 L 125 113 A 130 130 0 0 1 250 20 Z" fill="#a855f7" stroke="white" stroke-width="2"/>
+                    <text x="330" y="80" fill="white" font-weight="bold">30%</text>
+                    <text x="300" y="220" fill="white" font-weight="bold">40%</text>
+                    <text x="170" y="200" fill="white" font-weight="bold">20%</text>
+                    <text x="190" y="90" fill="white" font-weight="bold">10%</text>
+                `;
+            }
+        }
+    };
+
+    function drawAxes() {
+        let html = '';
+        // Y Grid
+        for(let i=0; i<=4; i++) {
+            html += `<line x1="30" y1="${40 + i*60}" x2="480" y2="${40 + i*60}" class="grid" />`;
+        }
+        // Axes
+        html += `<line x1="40" y1="20" x2="40" y2="280" class="axis" />`;
+        html += `<line x1="40" y1="280" x2="480" y2="280" class="axis" />`;
+        return html;
+    }
+
+    function updateView(type) {
+        const data = charts[type];
+        title.innerText = data.title;
+        desc.innerText = data.desc;
+        code.innerHTML = data.code;
+        svg.innerHTML = data.render();
+    }
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            buttons.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            updateView(e.target.dataset.type);
+        });
+    });
+
+    // Init
+    updateView('line');
+</script>
+</body>
+</html>
